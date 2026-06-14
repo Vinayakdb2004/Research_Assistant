@@ -1,0 +1,11 @@
+.env
+
+uploads/
+
+vectorstore/
+
+__pycache__/
+
+*.faiss
+*.pkl
+*.pyc
