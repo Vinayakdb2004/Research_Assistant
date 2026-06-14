@@ -1,4 +1,5 @@
-const API = "http://127.0.0.1:8000";
+const API_URL =
+"https://researchassistant-production-7471.up.railway.app";
 
 const fileInput =
 document.getElementById("pdfUpload");
@@ -12,105 +13,165 @@ document.getElementById("file-list");
 const chatBox =
 document.getElementById("chat-box");
 
+const questionInput =
+document.getElementById("question");
+
+// ======================
+// STATUS
+// ======================
+
 function setStatus(message){
-    statusBox.innerHTML = message;
+
+    if(statusBox){
+        statusBox.innerHTML = message;
+    }
 }
 
+// ======================
+// CHAT
+// ======================
+
+function addUserMessage(text){
+
+    const div =
+    document.createElement("div");
+
+    div.className =
+    "message user";
+
+    div.innerHTML = text;
+
+    chatBox.appendChild(div);
+
+    chatBox.scrollTop =
+    chatBox.scrollHeight;
+}
+
+function addBotMessage(text){
+
+    const div =
+    document.createElement("div");
+
+    div.className =
+    "message bot";
+
+    div.innerHTML = text;
+
+    chatBox.appendChild(div);
+
+    chatBox.scrollTop =
+    chatBox.scrollHeight;
+}
+
+// ======================
+// DOCUMENTS
+// ======================
+
 async function loadDocuments(){
+
     try{
+
         const response =
-        await fetch(`${API}/documents`);
+        await fetch(
+            `${API_URL}/documents`
+        );
 
         const data =
         await response.json();
+
+        fileList.innerHTML = "";
 
         if(
             !data.documents ||
             data.documents.length === 0
         ){
-            fileList.innerHTML =
-            "<div class='empty'>No files uploaded</div>";
+
+            fileList.innerHTML = `
+            <div class="empty">
+                No documents uploaded
+            </div>
+            `;
+
             return;
         }
 
-        fileList.innerHTML = "";
-
         data.documents.forEach(doc => {
+
             fileList.innerHTML += `
 
-<div class="pdf-card">
+            <div class="pdf-card">
 
-    <div class="pdf-icon">
+                <div class="pdf-icon">
+                    📄
+                </div>
 
-        📄
+                <div class="pdf-info">
 
-    </div>
+                    <div
+                    class="pdf-name"
+                    title="${doc.name}">
 
-    <div class="pdf-info">
+                        ${doc.name}
 
-        <div
-        class="pdf-name"
-        title="${doc.name}">
+                    </div>
 
-            ${doc.name}
+                    <div class="pdf-size">
+                        ${doc.size} MB
+                    </div>
 
-        </div>
+                    <div class="actions">
 
-        <div class="pdf-size">
+                        <button
+                        class="preview-btn"
+                        onclick="previewFile('${doc.name}')">
 
-            ${doc.size} MB
+                            👁
+                        </button>
 
-        </div>
+                        <button
+                        class="delete-btn"
+                        onclick="deleteFile('${doc.name}')">
 
-        <div class="actions">
+                            🗑
+                        </button>
 
-            <button
-            class="preview-btn"
+                    </div>
 
-            onclick="previewFile(
-            '${doc.name}'
-            )">
+                </div>
 
-                👁
+            </div>
 
-            </button>
-
-            <button
-            class="delete-btn"
-
-            onclick="deleteFile(
-            '${doc.name}'
-            )">
-
-                🗑
-
-            </button>
-
-        </div>
-
-    </div>
-
-</div>
-
-`;
+            `;
         });
+
     }
     catch(error){
+
         console.error(error);
-        fileList.innerHTML =
-        "Unable to load documents";
+
+        fileList.innerHTML = `
+        <div class="empty">
+            Unable to load documents
+        </div>
+        `;
     }
 }
+
+// ======================
+// UPLOAD
+// ======================
 
 fileInput.addEventListener(
 "change",
 async function(){
-    const file = this.files[0];
+
+    const file =
+    this.files[0];
 
     if(!file) return;
 
     setStatus(
-    "⏳ Uploading..."
+        "⏳ Uploading..."
     );
 
     const formData =
@@ -122,108 +183,94 @@ async function(){
     );
 
     try{
+
+        const response =
         await fetch(
-            `${API}/upload`,
+            `${API_URL}/upload`,
             {
                 method:"POST",
                 body:formData
             }
         );
 
+        if(!response.ok){
+
+            throw new Error(
+                "Upload failed"
+            );
+        }
+
         setStatus(`
-    🟢 Ready
-    <br>
-    📄 ${file.name}
-    <br>
-    ✓ Indexed Successfully
-    `);
+            🟢 Ready
+            <br>
+            📄 ${file.name}
+            <br>
+            ✓ Indexed Successfully
+        `);
 
         await loadDocuments();
+
     }
     catch(error){
-        setStatus(
-        "❌ Upload Failed"
-        );
 
         console.error(error);
+
+        setStatus(
+            "❌ Upload Failed"
+        );
     }
 
     this.value = "";
 });
 
-function addUserMessage(text){
-    chatBox.innerHTML += `
-
-<div class="message user">
-
-    ${text}
-
-</div>
-
-`;
-}
-
-function addBotMessage(text){
-    chatBox.innerHTML += `
-
-<div class="message bot">
-
-    ${text}
-
-</div>
-
-`;
-}
+// ======================
+// ASK QUESTION
+// ======================
 
 async function sendQuestion(){
-    const input =
-document.getElementById(
-"question"
-);
 
     const question =
-    input.value.trim();
+    questionInput.value.trim();
 
-    if(!question)
-    return;
+    if(!question) return;
 
     const welcome =
-document.querySelector(
-".welcome"
-);
+    document.querySelector(
+        ".welcome"
+    );
 
     if(welcome){
         welcome.remove();
     }
 
-    addUserMessage(
-        question
+    addUserMessage(question);
+
+    questionInput.value = "";
+
+    const typing =
+    document.createElement("div");
+
+    typing.className =
+    "message bot";
+
+    typing.id =
+    "typing";
+
+    typing.innerHTML =
+    "Thinking...";
+
+    chatBox.appendChild(
+        typing
     );
-
-    input.value = "";
-
-    chatBox.scrollTop =
-    chatBox.scrollHeight;
-
-    chatBox.innerHTML += `
-
-<div
-class="message bot"
-id="typing">
-
-    Thinking...
-
-</div>
-
-`;
 
     chatBox.scrollTop =
     chatBox.scrollHeight;
 
     try{
+
         const response =
         await fetch(
-            `${API}/ask`,
+            `${API_URL}/ask`,
             {
                 method:"POST",
 
@@ -241,58 +288,28 @@ id="typing">
         const data =
         await response.json();
 
-        const typing =
-        document.getElementById(
-        "typing"
-        );
-
-        if(typing){
-            typing.remove();
-        }
-
-        let answer = "";
-
-        if(
-            typeof data.answer ===
-            "string"
-        ){
-            answer =
-            data.answer;
-        }
-
-        else if(
-            data.answer &&
-            data.answer.answer
-        ){
-            answer =
-            data.answer.answer;
-        }
-
-        else{
-            answer =
-            JSON.stringify(
-                data,
-                null,
-                2
-            );
-        }
+        document
+        .getElementById(
+            "typing"
+        )
+        ?.remove();
 
         addBotMessage(
-            answer
+            data.answer ||
+            "No response received."
         );
+
     }
     catch(error){
-        const typing =
-        document.getElementById(
-        "typing"
-        );
 
-        if(typing){
-            typing.remove();
-        }
+        document
+        .getElementById(
+            "typing"
+        )
+        ?.remove();
 
         addBotMessage(
-        "Something went wrong."
+            "⚠ Server Error"
         );
 
         console.error(error);
@@ -302,58 +319,75 @@ id="typing">
     chatBox.scrollHeight;
 }
 
-document
-.getElementById("question")
-.addEventListener(
+// ======================
+// ENTER KEY
+// ======================
+
+questionInput.addEventListener(
 "keydown",
 function(e){
-    if(
-        e.key === "Enter"
-    ){
+
+    if(e.key === "Enter"){
+
         e.preventDefault();
+
         sendQuestion();
     }
 });
 
-loadDocuments();
+// ======================
+// FILE PREVIEW
+// ======================
 
 function previewFile(filename){
 
     window.open(
-
-        `${API}/preview/${filename}`,
-
+        `${API_URL}/preview/${filename}`,
         "_blank"
-
     );
 }
+
+// ======================
+// DELETE FILE
+// ======================
+
 async function deleteFile(filename){
 
-    const ok = confirm(
-
+    const ok =
+    confirm(
         `Delete ${filename}?`
-
     );
 
     if(!ok) return;
 
-    await fetch(
+    try{
 
-        `${API}/delete/${filename}`,
+        await fetch(
+            `${API_URL}/delete/${filename}`,
+            {
+                method:"DELETE"
+            }
+        );
 
-        {
+        setStatus(
+            `🗑 Deleted ${filename}`
+        );
 
-            method:"DELETE"
+        await loadDocuments();
 
-        }
+    }
+    catch(error){
 
-    );
+        console.error(error);
 
-    loadDocuments();
-
-    setStatus(
-
-        `🗑 Deleted ${filename}`
-
-    );
+        setStatus(
+            "Delete failed"
+        );
+    }
 }
+
+// ======================
+// INITIAL LOAD
+// ======================
+
+loadDocuments();
