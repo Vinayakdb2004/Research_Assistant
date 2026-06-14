@@ -6,9 +6,21 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 
-embeddings = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
+# Lazy loading
+embeddings = None
+
+
+def get_embeddings():
+
+    global embeddings
+
+    if embeddings is None:
+
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/paraphrase-MiniLM-L3-v2"
+        )
+
+    return embeddings
 
 
 def add_pdf_to_vectorstore(pdf_path):
@@ -24,16 +36,17 @@ def add_pdf_to_vectorstore(pdf_path):
 
     chunks = splitter.split_documents(documents)
 
-    # Add source metadata
     for chunk in chunks:
-        chunk.metadata["filename"] = os.path.basename(pdf_path)
 
-    # Existing FAISS?
+        chunk.metadata["filename"] = os.path.basename(
+            pdf_path
+        )
+
     if os.path.exists("vectorstore/index.faiss"):
 
         vectorstore = FAISS.load_local(
             "vectorstore",
-            embeddings,
+            get_embeddings(),
             allow_dangerous_deserialization=True
         )
 
@@ -43,14 +56,17 @@ def add_pdf_to_vectorstore(pdf_path):
 
         vectorstore = FAISS.from_documents(
             chunks,
-            embeddings
+            get_embeddings()
         )
 
-    vectorstore.save_local("vectorstore")
+    vectorstore.save_local(
+        "vectorstore"
+    )
 
     print(
         f"Indexed {os.path.basename(pdf_path)}"
     )
+
 
 def rebuild_vectorstore():
 
@@ -75,33 +91,42 @@ def rebuild_vectorstore():
 
     ]
 
-    if not pdfs:
+    if len(pdfs) == 0:
+
+        print(
+            "No PDFs remaining"
+        )
 
         return
 
     docs = []
 
     for pdf in pdfs:
+
         loader = PyPDFLoader(pdf)
-        docs.extend(loader.load())
+
+        docs.extend(
+            loader.load()
+        )
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
         chunk_overlap=200
     )
 
-    chunks = splitter.split_documents(docs)
-
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    chunks = splitter.split_documents(
+        docs
     )
 
     db = FAISS.from_documents(
         chunks,
-        embeddings
+        get_embeddings()
     )
 
-    db.save_local("vectorstore")
+    db.save_local(
+        "vectorstore"
+    )
 
-    print("Vectorstore rebuilt")
-
+    print(
+        "Vectorstore rebuilt"
+    )
