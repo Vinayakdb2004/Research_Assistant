@@ -1,12 +1,11 @@
-from dotenv import load_dotenv
 import os
+
+from dotenv import load_dotenv
 
 load_dotenv()
 
 from langchain_groq import ChatGroq
-
 from langchain_huggingface import HuggingFaceEmbeddings
-
 from langchain_community.vectorstores import FAISS
 
 
@@ -17,16 +16,37 @@ llm = ChatGroq(
     )
 )
 
+embeddings = None
+
+
+def get_embeddings():
+
+    global embeddings
+
+    if embeddings is None:
+
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/paraphrase-MiniLM-L3-v2"
+        )
+
+    return embeddings
+
 
 def ask_pdf(question):
 
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
-    )
+    if not os.path.exists(
+        "vectorstore/index.faiss"
+    ):
+
+        return {
+            "answer":
+            "No documents uploaded yet.",
+            "sources":[]
+        }
 
     vectorstore = FAISS.load_local(
         "vectorstore",
-        embeddings,
+        get_embeddings(),
         allow_dangerous_deserialization=True
     )
 
@@ -38,7 +58,9 @@ def ask_pdf(question):
         }
     )
 
-    docs = retriever.invoke(question)
+    docs = retriever.invoke(
+        question
+    )
 
     context = ""
 
@@ -47,21 +69,18 @@ def ask_pdf(question):
     for doc in docs:
 
         context += (
-            doc.page_content + "\n\n"
+            doc.page_content
+            + "\n\n"
         )
 
         sources.append({
+
             "file":
             doc.metadata.get(
                 "filename",
                 "Unknown"
-            ),
-
-            "page":
-            doc.metadata.get(
-                "page",
-                "Unknown"
             )
+
         })
 
     prompt = f"""
@@ -74,12 +93,16 @@ Question:
 {question}
 """
 
-    response = llm.invoke(prompt)
+    response = llm.invoke(
+        prompt
+    )
 
     return {
+
         "answer":
         response.content,
 
         "sources":
         sources
+
     }
