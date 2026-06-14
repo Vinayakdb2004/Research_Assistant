@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width,initial-scale=1">
+
+<title>Research AI</title>
+
+<link rel="stylesheet"
+href="style.css">
+
+</head>
+
+<body>
+
+<div class="app">
+
+    <aside class="sidebar">
+
+        <div class="logo">
+
+            🤖 Research AI
+
+            <span>
+            AI Document Intelligence
+            </span>
+
+        </div>
+
+        <label class="upload-btn">
+
+            Upload PDF
+
+            <input
+            type="file"
+            id="pdfUpload"
+            hidden>
+
+        </label>
+
+        <div class="card">
+
+            <h3>Status</h3>
+
+            <div id="status-box">
+
+                Ready
+
+            </div>
+
+        </div>
+
+        <div class="card">
+
+            <h3>
+                Documents
+            </h3>
+
+            <div id="file-list">
+
+                Loading...
+
+            </div>
+
+        </div>
+
+    </aside>
+
+    <main class="main">
+
+        <div id="drop-zone">
+
+            📄 Drag PDFs Here
+
+        </div>
+
+        <div id="chat-box">
+
+            <div class="welcome">
+
+                <h1>
+                    Welcome to Research AI
+                </h1>
+
+                <p>
+                    Upload PDFs and
+                    chat with them.
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="input-area">
+
+            <input
+            id="question"
+            placeholder=
+            "Ask anything about your PDFs...">
+
+            <button
+            onclick="sendQuestion()">
+
+                Send
+
+            </button>
+
+        </div>
+
+    </main>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
